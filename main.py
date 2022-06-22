@@ -15,6 +15,7 @@ import requests
 import pycurl
 from argparse import ArgumentParser
 
+
 class color:
     FAIL = '\033[91m'
     BLUE = '\033[94m'
@@ -23,6 +24,7 @@ class color:
     ENDC = '\033[0m'
     GREEN = '\033[1;32m'
 
+orgs = {"SEFAZ": "7","SEAD": "13","PC": "23","SSP": "45","UEA": "120","SEAP": "128","ADAF": "158","ADS": "117","DETRAN": "63","CBMAM": "91"}   
 VERSION = "1.0"
 SAMPLES = """
 [OSINT] Search Civil Servant Payments v1.0
@@ -42,29 +44,27 @@ def download(uri):
     # exemplo URL - https://www.transparencia.am.gov.br/arquivos/2021/45_202101.pdf
     url = "https://www.transparencia.am.gov.br/arquivos/"
     ext = ".pdf"
-    u = url + uri + ext
-    r = requests.get(u)
+    link = url + uri + ext
+    r = requests.get(link)
 
-    if r.status_code == 200:
-        print("\n [d] " + color.BLUE + "Downloading..." + color.ENDC )        
-        file = open('files/' + uri + ext, 'wb')        
-        c = pycurl.Curl()
-        c.setopt(c.HTTPHEADER, ['User-Agent:Mozilla/5.0 (X11; Linux x86_64; rv:101.0) Gecko/20100101 Firefox/101.0'])        
-        c.setopt(c.URL, u)
-        c.setopt(c.WRITEDATA, file)
-        c.perform()
-        c.close()
+    try:
+        print("\n [d] " + color.BLUE + "Downloading... " + color.ENDC + uri + ext)                     
+        with open('files/' + uri + ext, 'wb') as f:    
+            c = pycurl.Curl()
+            c.setopt(c.HTTPHEADER, ['User-Agent:Mozilla/5.0 (X11; Linux x86_64; rv:101.0) Gecko/20100101 Firefox/101.0'])        
+            c.setopt(c.URL, link)
+            c.setopt(c.WRITEDATA, f)
+            c.perform()
+            c.close()
         
         if os.path.exists("files/" + uri + ext):
             print("\n [s] " + color.GREEN + "Success..." + color.ENDC) 
-            return True
-        else:
-            return False
-    
-        
-def search(org,dt):
-    orgs = {"SEFAZ": "7","SEAD": "13","SSP": "45","UEA": "120","SEAP": "128"}   
-
+            return True       
+            
+    except:
+        return None
+           
+def search(org,dt):  
     # UPPER Strings
     org = str.upper(org)
 
@@ -91,7 +91,7 @@ def main():
     # Get arguments
     argp = ArgumentParser()
     argp = ArgumentParser(description="OSINT - This is a simple Python script to search payment of civil servant.", 
-                          usage="./main.py [options] [-d YYYY-MM]")    
+                          usage="python main.py [-o ORG] [-d DATE]")    
     argp.add_argument('-v', '--version', dest='version', action="store_true", help='Version')    
     argp.add_argument('-o', '--org', dest='org', required=False, help='Org to search')
     argp.add_argument('-d', '--date', dest='date',required=False, help='Date to search')    
@@ -105,9 +105,13 @@ def main():
         search(args.org, args.date)
     else:        
         print(SAMPLES)
+        print("List of Orgs available...")
+        #print(list(orgs.keys()))
+        list_of_orgs = str(list(orgs.keys()))
+        print(list_of_orgs.replace("'","",100))
+        print("\n")
+        
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     main()
-
-    
