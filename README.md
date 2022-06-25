@@ -1,6 +1,6 @@
-# Adriano Freitas - adrianofreitas.me ® 2022
+# Transparency Portal
 
-# OSINT - This is a simple Python script to search payment of civil servant on Transparency Portal.
+## OSINT - This is a simple Python script to search payment of civil servant on Transparency Portal.
 
 
 <p align="center">
