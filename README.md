@@ -15,7 +15,7 @@
 # clone the repo
 $ git clone https://github.com/adrian-ofreitas/tportal.git
 
-# change the working directory to sherlock
+# change the working directory to tportal
 $ cd tportal/
 
 # install the requirements
