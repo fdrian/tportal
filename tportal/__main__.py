@@ -3,29 +3,37 @@
 
 """cservant.py: OSINT - This is a simple Python script to search payment of civil servant."""
 
-__author__      = "Adriano Freitas"
-__copyright__   = "Copyright 2022, Night City"
+__author__      = "Drian"
+__copyright__   = "Copyright 2024"
 __license__ = "GPL"
 __version__ = "3.0"
 
 import os
-import commands
 import datetime
 import requests
-import pycurl
 from argparse import ArgumentParser
 
 
 class color:
     FAIL = '\033[91m'
     BLUE = '\033[94m'
-    BLUE2 = '\033[1;36m'
+    GREEN = '\033[1;32m'
     INFO = '\033[93m'
     ENDC = '\033[0m'
-    GREEN = '\033[1;32m'
 
-orgs = {"SEFAZ": "7","SEAD": "13","PC": "23","SSP": "45","UEA": "120","SEAP": "128","ADAF": "158","ADS": "117","DETRAN": "63","CBMAM": "91"}   
-VERSION = "1.0"
+orgs = {
+    "SEFAZ": "7",
+    "SEAD": "13",
+    "PC": "23",
+    "SSP": "45",
+    "UEA": "120",
+    "SEAP": "128",
+    "ADAF": "158",
+    "ADS": "117",
+    "DETRAN": "63",
+    "CBMAM": "91"
+}
+
 SAMPLES = """
 [OSINT] Search Civil Servant Payments v1.0
 
@@ -37,80 +45,92 @@ Command line examples:
     python main.py [-o ORG] [-d DATE]
     python main.py -o <ORG> -d <YYYY-MM>
     python main.py --org SEFAZ --date 2021-01
-
-    """
+"""
 
 def download(uri):
-    # exemplo URL - https://www.transparencia.am.gov.br/arquivos/2021/45_202101.pdf
     url = "https://www.transparencia.am.gov.br/arquivos/"
     ext = ".pdf"
     link = url + uri + ext
-    r = requests.get(link)
+    print("\n [d] " + color.BLUE + "Downloading... " + color.ENDC + uri + ext)
+
+    # Create the necessary directory structure
+    file_path = 'files/' + uri + ext
+    directory = os.path.dirname(file_path)
+    
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
     try:
-        print("\n [d] " + color.BLUE + "Downloading... " + color.ENDC + uri + ext)                     
-        with open('files/' + uri + ext, 'wb') as f:    
-            c = pycurl.Curl()
-            c.setopt(c.HTTPHEADER, ['User-Agent:Mozilla/5.0 (X11; Linux x86_64; rv:101.0) Gecko/20100101 Firefox/101.0'])        
-            c.setopt(c.URL, link)
-            c.setopt(c.WRITEDATA, f)
-            c.perform()
-            c.close()
-        
-        if os.path.exists("files/" + uri + ext):
-            print("\n [s] " + color.GREEN + "Success..." + color.ENDC) 
-            return True       
-            
-    except:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; rv:130.0) Gecko/20100101 Firefox/130.0',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate, br, zstd',
+            'DNT': '1',
+            'Sec-GPC': '1',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Pragma': 'no-cache',
+            'Cache-Control': 'no-cache'
+        }
+        r = requests.get(link, headers=headers)
+
+        if r.status_code == 200:
+            with open(file_path, 'wb') as f:
+                f.write(r.content)
+            print("\n [s] " + color.GREEN + "Success..." + color.ENDC)
+            return True
+        else:
+            print("\n [e] " + color.FAIL + f"Failed to download. Status code: {r.status_code}" + color.ENDC)
+            return None
+
+    except Exception as e:
+        print("\n [e] " + color.FAIL + f"An error occurred: {e}" + color.ENDC)
         return None
-           
-def search(org,dt):  
+
+def search(org, dt):
     # UPPER Strings
     org = str.upper(org)
 
-    if org in orgs:       
-        year, month = map(int,dt.split('-'))
+    if org in orgs:
+        year, month = map(int, dt.split('-'))
 
-        if 2013 < year and year < 2023:
+        if 2013 < year < 2026:
             dt = datetime.date(year, month, 1)
             date = dt.strftime("_%Y%m")
-            uri = str(dt.year) + '/' + orgs[org] + date           
-                        
-            if download(uri):                
+            uri = str(dt.year) + '/' + orgs[org] + date
+
+            if download(uri):
                 print("\nSaved in files/" + uri + ".pdf")
             else:
-                print("\n [e] " + color.FAIL + "Unknown error..." + color.ENDC )                
+                print("\n [e] " + color.FAIL + "Unknown error..." + color.ENDC)
 
         else:
-            print("\n [e] " + color.FAIL + "Invalid year..." + color.ENDC )            
-            print("check the year entered. Value must be between 2014 and 2022")
-    else:        
-        print("\n [e] " + color.FAIL + "Org not found in our database..." + color.ENDC )
+            print("\n [e] " + color.FAIL + "Invalid year..." + color.ENDC)
+            print("Check the year entered. Value must be between 2014 and 2025")
+    else:
+        print("\n [e] " + color.FAIL + "Org not found in our database..." + color.ENDC)
 
-def main():  
+def main():
     # Get arguments
-    argp = ArgumentParser()
-    argp = ArgumentParser(description="OSINT - This is a simple Python script to search payment of civil servant.", 
-                          usage="python main.py [-o ORG] [-d DATE]")    
-    argp.add_argument('-v', '--version', dest='version', action="store_true", help='Version')    
+    argp = ArgumentParser(description="OSINT - This is a simple Python script to search payment of civil servant.",
+                          usage="python main.py [-o ORG] [-d DATE]")
+    argp.add_argument('-v', '--version', dest='version', action="store_true", help='Version')
     argp.add_argument('-o', '--org', dest='org', required=False, help='Org to search')
-    argp.add_argument('-d', '--date', dest='date',required=False, help='Date to search')    
+    argp.add_argument('-d', '--date', dest='date', required=False, help='Date to search')
     args = argp.parse_args()
-    #print(vars(args))
-    
+
     if args.version:
         print(SAMPLES)
     elif args.org and args.date:
         print("\n [i] " + color.INFO + "Checking..." + color.ENDC)
         search(args.org, args.date)
-    else:        
+    else:
         print(SAMPLES)
         print("List of Orgs available...")
-        #print(list(orgs.keys()))
         list_of_orgs = str(list(orgs.keys()))
-        print(list_of_orgs.replace("'","",100))
+        print(list_of_orgs.replace("'", "", 100))
         print("\n")
-        
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
