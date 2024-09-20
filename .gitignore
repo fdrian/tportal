@@ -1,3 +1,4 @@
 # ignore ALL .pdf files
 *.pdf
 .idea/
+files/
